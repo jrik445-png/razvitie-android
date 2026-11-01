@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -8,25 +9,64 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install Java 17
+        id: java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify Java
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          javac -version
+          java -version 2>&1 | grep -q '17\.'
+
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip \
-            build-essential ccache libffi-dev libssl-dev zlib1g-dev \
-            libncurses5-dev libncursesw5-dev cmake
+          sudo apt-get install -y \
+            git zip unzip \
+            python3-pip python3-venv \
+            build-essential ccache \
+            libffi-dev libssl-dev \
+            zlib1g-dev libncurses5-dev \
+            libncursesw5-dev cmake
 
       - name: Install Buildozer
         run: |
           python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user buildozer==1.5.0 Cython==0.29.36
+          python3 -m pip install --user \
+            buildozer==1.5.0 \
+            Cython==0.29.36
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Check project files
+        run: |
+          test -f main.py
+          test -f content.py
+          test -f buildozer.spec
+          python3 -m py_compile main.py content.py
+          grep -q '^android.minapi = 26$' buildozer.spec
+          echo "Project checks passed"
+
       - name: Build APK
-        run: buildozer android debug
+        env:
+          JAVA_HOME: ${{ steps.java.outputs.path }}
+        run: |
+          export PATH="$JAVA_HOME/bin:$PATH"
+          echo "Using Java:"
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+          buildozer android clean
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
