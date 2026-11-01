@@ -25,6 +25,10 @@ jobs:
           python3 -m pip install --user buildozer==1.5.0 Cython==0.29.36
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Show Android build settings
+        run: |
+          grep -E '^(requirements|android.api|android.minapi|android.archs|p4a.branch)' buildozer.spec
+
       - name: Build APK
         run: |
           buildozer android clean
