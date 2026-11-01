@@ -17,7 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip python3-venv \
             build-essential ccache libffi-dev libssl-dev zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 cmake
+            libncurses5-dev libncursesw5-dev cmake
 
       - name: Install Buildozer
         run: |
@@ -26,7 +26,9 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build APK
-        run: buildozer android debug
+        run: |
+          buildozer android clean
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
