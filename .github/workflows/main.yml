@@ -1,6 +1,13 @@
-
-name: Build Android APK
-
+      - name: Build APK
+        env:
+          JAVA_HOME: ${{ steps.java.outputs.path }}
+        run: |
+          export PATH="$JAVA_HOME/bin:$PATH"
+          echo "Using Java:"
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+          rm -rf .buildozer
+          buildozer -v android debug
 on:
   workflow_dispatch:
   push:
