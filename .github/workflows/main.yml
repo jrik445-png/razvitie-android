@@ -1,13 +1,5 @@
-      - name: Build APK
-        env:
-          JAVA_HOME: ${{ steps.java.outputs.path }}
-        run: |
-          export PATH="$JAVA_HOME/bin:$PATH"
-          echo "Using Java:"
-          java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-          rm -rf .buildozer
-          buildozer -v android debug
+name: Build Android APK
+
 on:
   workflow_dispatch:
   push:
@@ -18,16 +10,20 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
 
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONUNBUFFERED: "1"
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Java 17
+      - name: Set up Java 17
         id: java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Verify Java
         run: |
@@ -39,17 +35,18 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get install -y --no-install-recommends \
             git zip unzip \
             python3-pip python3-venv \
             build-essential ccache \
             libffi-dev libssl-dev \
             zlib1g-dev libncurses5-dev \
-            libncursesw5-dev cmake
+            libncursesw5-dev cmake \
+            openjdk-17-jdk
 
       - name: Install Buildozer
         run: |
-          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user --upgrade pip setuptools wheel
           python3 -m pip install --user \
             buildozer==1.5.0 \
             Cython==0.29.36
@@ -72,10 +69,14 @@ jobs:
           echo "Using Java:"
           java -version
           echo "JAVA_HOME=$JAVA_HOME"
-          buildozer android clean
+
+          # Important: do not run 'buildozer android clean' before the .buildozer
+          # environment is initialized. It causes FileNotFoundError for python-for-android.
+          rm -rf .buildozer
+
           buildozer -v android debug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Razvitie-debug-apk
